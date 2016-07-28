@@ -1,0 +1,18 @@
+name: x86rdrand-benchmark
+version: 0.0.1
+summary: Intel x86 rdrand CPU benchmark
+description: x86rdrand-benchmark benchmarks the rdrand random number generator
+
+confinement: strict
+
+parts:
+    x86rdrand-benchmark:
+        plugin: make
+        source: .
+        build-packages:
+            - gcc
+            - make
+apps:
+    x86rdrand-benchmark:
+        command: usr/bin/x86rdrand-benchmark
+
