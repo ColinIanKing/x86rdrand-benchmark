@@ -143,7 +143,7 @@ void *test64(void *private)
 
 	usec1 = (tv1.tv_sec * 1000000) + tv1.tv_usec;
 	usec2 = (tv2.tv_sec * 1000000) + tv2.tv_usec;
-	
+
 	info->iter = i;
 	info->usec = usec2 - usec1;
 
@@ -178,12 +178,12 @@ void test(uint32_t threads)
 	}
 	usec /= threads;
 	nsec = 1000.0 * (double)usec / iter;
-		
+
 	printf("%" PRIu16 "\t%8.3f\t%8.3f\t  %12.7f\n", threads, nsec, 1000.0 / nsec, 64.0 / nsec);
 }
 
 int main(int argc, char **argv)
-{	
+{
 	uint32_t eax, ebx, ecx, edx = 0;
 	uint32_t i;
 	uint32_t cpus = sysconf(_SC_NPROCESSORS_ONLN);
@@ -206,7 +206,7 @@ int main(int argc, char **argv)
 	printf("Exercising 64 bit rdrands:\n");
 	printf("Threads\trdrand\t\tmillion rdrands\t  billion bits\n");
 	printf("\tduration (ns)\tper second\t  per second\n");
-	for (i = 1; i <= cpus; i++) 
+	for (i = 1; i <= cpus; i++)
 		test(i);
 
 	exit(EXIT_SUCCESS);
