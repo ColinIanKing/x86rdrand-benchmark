@@ -26,6 +26,10 @@
 #include <pthread.h>
 #include <stdbool.h>
 
+#if !(defined(__x86_64__) || defined(__x86_64) || defined(__i386__) || defined(__i386))
+#error only for Intel processors!
+#endif
+
 volatile int start_test;
 volatile int end_test;
 
