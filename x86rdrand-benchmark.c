@@ -30,6 +30,12 @@
 #error only for Intel processors!
 #endif
 
+#if defined(__x86_64__) || defined(__x86_64)
+#define WIDTH	64
+#else
+#define WIDTH	32
+#endif
+
 volatile int start_test;
 volatile int end_test;
 
@@ -98,8 +104,13 @@ void *test64(void *private)
 	if (info->thread_num == 0) {
 		gettimeofday(&tv1, NULL);
 
-		for (i = 0; i < info->iter; i++)
+		for (i = 0; i < info->iter; i++) {
+#if defined(__x86_64__) || defined(__x86_64)
 			rdrand64();
+#else
+			rdrand32();
+#endif
+		}
 
 		end_test = true;
 		gettimeofday(&tv2, NULL);
@@ -108,6 +119,7 @@ void *test64(void *private)
 		gettimeofday(&tv1, NULL);
 
 		for (i = 0; !end_test; i += 32) {
+#if defined(__x86_64__) || defined(__x86_64)
 			rdrand64();
 			rdrand64();
 			rdrand64();
@@ -140,6 +152,40 @@ void *test64(void *private)
 			rdrand64();
 			rdrand64();
 			rdrand64();
+#else
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+			rdrand32();
+#endif
 		}
 
 		gettimeofday(&tv2, NULL);
@@ -183,7 +229,7 @@ void test(uint32_t threads)
 	usec /= threads;
 	nsec = 1000.0 * (double)usec / iter;
 
-	printf("%" PRIu16 "\t%8.3f\t%8.3f\t  %12.7f\n", threads, nsec, 1000.0 / nsec, 64.0 / nsec);
+	printf("%" PRIu16 "\t%8.3f\t%8.3f\t  %12.7f\n", threads, nsec, 1000.0 / nsec, (float)WIDTH / nsec);
 }
 
 int main(int argc, char **argv)
@@ -207,7 +253,7 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	printf("Exercising 64 bit rdrands:\n");
+	printf("Exercising %u bit rdrands:\n", WIDTH);
 	printf("Threads\trdrand\t\tmillion rdrands\t  billion bits\n");
 	printf("\tduration (ns)\tper second\t  per second\n");
 	for (i = 1; i <= cpus; i++)
