@@ -55,7 +55,7 @@ typedef struct {
                 "=d" (edx) : "a" (in))
 
 
-inline uint32_t rdrand16(void)
+static inline uint32_t rdrand16(void)
 {
         uint32_t        ret;
 
@@ -66,7 +66,7 @@ inline uint32_t rdrand16(void)
         return ret;
 }
 
-inline uint32_t rdrand32(void)
+static inline uint32_t rdrand32(void)
 {
         uint32_t        ret;
 
@@ -77,7 +77,7 @@ inline uint32_t rdrand32(void)
         return ret;
 }
 
-inline uint64_t rdrand64(void)
+static inline uint64_t rdrand64(void)
 {
         uint64_t        ret;
 
@@ -88,7 +88,7 @@ inline uint64_t rdrand64(void)
         return ret;
 }
 
-void *test64(void *private)
+static void *test64(void *private)
 {
 	struct timeval tv1, tv2;
 	uint64_t usec1;
@@ -200,7 +200,7 @@ void *test64(void *private)
 	return NULL;
 }
 
-void test(uint32_t threads)
+static void test(uint32_t threads)
 {
 	uint32_t i;
 	uint64_t usec = 0;
