@@ -253,7 +253,7 @@ int main(void)
 		exit(EXIT_FAILURE);
 	}
 
-	printf("Exercising %u bit rdrands:\n", WIDTH);
+	printf("Exercising %d bit rdrands:\n", WIDTH);
 	printf("Threads\trdrand\t\tmillion rdrands\t  billion bits\n");
 	printf("\tduration (ns)\tper second\t  per second\n");
 	for (i = 1; i <= cpus; i++)
