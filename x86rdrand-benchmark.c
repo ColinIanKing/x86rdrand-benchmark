@@ -232,7 +232,7 @@ static void test(uint32_t threads)
 	printf("%" PRIu16 "\t%8.3f\t%8.3f\t  %12.7f\n", threads, nsec, 1000.0 / nsec, (float)WIDTH / nsec);
 }
 
-int main(int argc, char **argv)
+int main(void)
 {
 	uint32_t eax, ebx, ecx, edx = 0;
 	uint32_t i;

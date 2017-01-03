@@ -21,7 +21,18 @@ BINDIR=/usr/bin
 x86rdrand-benchmark: x86rdrand-benchmark.o
 	$(CC) $< -o $@ -lpthread
 
-CFLAGS += -O3 -Wall -Werror
+CFLAGS += -O3 -Wall -Werror -Wextra
+
+#
+# Pedantic flags
+#
+ifeq ($(PEDANTIC),1)
+CFLAGS += -Wabi -Wcast-qual -Wfloat-equal -Wmissing-declarations \
+        -Wmissing-format-attribute -Wno-long-long -Wpacked \
+        -Wredundant-decls -Wshadow -Wno-missing-field-initializers \
+        -Wno-missing-braces -Wno-sign-compare -Wno-multichar
+endif
+
 
 clean:
 	rm -f x86rdrand-benchmark x86rdrand-benchmark.o
