@@ -55,6 +55,7 @@ typedef struct {
                 "=d" (edx) : "a" (in))
 
 
+#if 0
 static inline uint32_t rdrand16(void)
 {
         uint32_t        ret;
@@ -76,6 +77,7 @@ static inline uint32_t rdrand32(void)
 
         return ret;
 }
+#endif
 
 static inline uint64_t rdrand64(void)
 {
