@@ -36,8 +36,8 @@
 #define WIDTH	32
 #endif
 
-volatile int start_test;
-volatile int end_test;
+volatile bool start_test;
+volatile bool end_test;
 
 typedef struct {
 	uint64_t usec;		/* duration of test in microseconds */
@@ -46,7 +46,7 @@ typedef struct {
 	pthread_t thread;	/* pthread info */
 } info_t;
 
-#define ITERATIONS	(100000000)
+#define ITERATIONS	(320000000)
 
 #define cpuid(in, eax, ebx, ecx, edx)   \
   asm("cpuid":  "=a" (eax),             \
@@ -55,10 +55,11 @@ typedef struct {
                 "=d" (edx) : "a" (in))
 
 
-#if 0
-static inline uint32_t rdrand16(void)
+
+#if defined(__x86_64__) || defined(__x86_64)
+static inline uint64_t rdrand64(void)
 {
-        uint32_t        ret;
+        uint64_t        ret;
 
         asm volatile("1:;\n\
         rdrand %0;\n\
@@ -66,7 +67,7 @@ static inline uint32_t rdrand16(void)
 
         return ret;
 }
-
+#else
 static inline uint32_t rdrand32(void)
 {
         uint32_t        ret;
@@ -79,16 +80,29 @@ static inline uint32_t rdrand32(void)
 }
 #endif
 
-static inline uint64_t rdrand64(void)
-{
-        uint64_t        ret;
 
-        asm volatile("1:;\n\
-        rdrand %0;\n\
-        jnc 1b;\n":"=r"(ret));
+#define RDRAND64x4	\
+	rdrand64();	\
+	rdrand64();	\
+	rdrand64();	\
+	rdrand64();	
 
-        return ret;
-}
+#define RDRAND64x16	\
+	RDRAND64x4	\
+	RDRAND64x4	\
+	RDRAND64x4	\
+	RDRAND64x4	
+
+#define RDRAND32x4	\
+	rdrand32();	\
+	rdrand32();	\
+	rdrand32();	\
+	rdrand32();	
+
+#define RDRAND32x16	\
+	RDRAND32x4	\
+	RDRAND32x4	\
+	RDRAND32x4
 
 static void *test64(void *private)
 {
@@ -97,6 +111,7 @@ static void *test64(void *private)
 	uint64_t usec2;
 	info_t *info = (info_t *)private;
 	register uint64_t i;
+	const uint64_t iter = info->iter / 32;
 
 	end_test = false;
 
@@ -106,11 +121,13 @@ static void *test64(void *private)
 	if (info->thread_num == 0) {
 		gettimeofday(&tv1, NULL);
 
-		for (i = 0; i < info->iter; i++) {
+		for (i = 0; i < iter; i++) {
 #if defined(__x86_64__) || defined(__x86_64)
-			rdrand64();
+			RDRAND64x16
+			RDRAND64x16
 #else
-			rdrand32();
+			RDRAND32x16
+			RDRAND32x16
 #endif
 		}
 
@@ -120,73 +137,13 @@ static void *test64(void *private)
 	} else {
 		gettimeofday(&tv1, NULL);
 
-		for (i = 0; !end_test; i += 32) {
+		for (i = 0; i < iter; i++) {
 #if defined(__x86_64__) || defined(__x86_64)
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
-			rdrand64();
+			RDRAND64x16
+			RDRAND64x16
 #else
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
-			rdrand32();
+			RDRAND32x16
+			RDRAND32x16
 #endif
 		}
 
@@ -196,7 +153,7 @@ static void *test64(void *private)
 	usec1 = (tv1.tv_sec * 1000000) + tv1.tv_usec;
 	usec2 = (tv2.tv_sec * 1000000) + tv2.tv_usec;
 
-	info->iter = i;
+	info->iter = i * 32;
 	info->usec = usec2 - usec1;
 
 	return NULL;
