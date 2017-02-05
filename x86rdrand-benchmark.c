@@ -30,30 +30,15 @@
 #include <sys/wait.h>
 #include <stdbool.h>
 
-#if !(defined(__x86_64__) || defined(__x86_64) || defined(__i386__) || defined(__i386))
+#define STACK_SIZE	(65536)
+#define ITERATIONS	(320000000)
+
+#if !(defined(__x86_64__) || \
+      defined(__x86_64) || \
+      defined(__i386__) || \
+      defined(__i386))
 #error only for Intel processors!
 #endif
-
-#if defined(__x86_64__) || defined(__x86_64)
-#define WIDTH	64
-#else
-#define WIDTH	32
-#endif
-
-volatile bool start_test;
-volatile bool end_test;
-
-#define STACK_SIZE	(65536)
-
-typedef struct {
-	uint64_t usec;		/* duration of test in microseconds */
-	uint64_t iter;		/* number of iterations taken */
-	uint16_t thread_num;	/* thread instance number */
-	pid_t	 pid;		/* clone process ID */
-	char 	 stack[STACK_SIZE];/* stack */
-} info_t;
-
-#define ITERATIONS	(320000000)
 
 #define cpuid(in, eax, ebx, ecx, edx)   \
   asm("cpuid":  "=a" (eax),             \
@@ -62,6 +47,12 @@ typedef struct {
                 "=d" (edx) : "a" (in))
 
 
+
+#if defined(__x86_64__) || defined(__x86_64)
+#define WIDTH	64
+#else
+#define WIDTH	32
+#endif
 
 #if defined(__x86_64__) || defined(__x86_64)
 static inline uint64_t rdrand64(void)
@@ -112,21 +103,29 @@ static inline uint32_t rdrand32(void)
 	RDRAND32x4	\
 	RDRAND32x4
 
+typedef struct {
+	uint64_t usec;		/* duration of test in microseconds */
+	uint64_t iter;		/* number of iterations taken */
+	uint16_t instance;	/* instance number */
+	pid_t	 pid;		/* clone process ID */
+	char 	 stack[STACK_SIZE];/* stack */
+} info_t;
+
+static volatile bool start_test, end_test;
+
 static int test64(void *private)
 {
 	struct timeval tv1, tv2;
-	uint64_t usec1;
-	uint64_t usec2;
-	info_t *info = (info_t *)private;
+	uint64_t usec1, usec2;
+	info_t *const info = (info_t *)private;
 	register uint64_t i;
 	const uint64_t iter = info->iter / 32;
 
 	end_test = false;
-
 	while (!start_test)
 		;
 
-	if (info->thread_num == 0) {
+	if (info->instance == 0) {
 		gettimeofday(&tv1, NULL);
 
 		for (i = 0; i < iter; i++) {
@@ -167,11 +166,10 @@ static int test64(void *private)
 	_exit(0);
 }
 
-static void test(uint32_t threads)
+static void test(const uint32_t threads)
 {
 	uint32_t i;
-	uint64_t usec = 0;
-	uint64_t iter = 0;
+	uint64_t usec = 0, iter = 0;
 	info_t *info;
 	double nsec;
 
@@ -184,7 +182,7 @@ static void test(uint32_t threads)
 	start_test = false;
 
 	for (i = 0; i < threads; i++) {
-		info[i].thread_num = i;
+		info[i].instance = i;
 		info[i].iter = ITERATIONS;
 		info[i].pid = clone(test64, &info[i].stack[STACK_SIZE - 64],
 			CLONE_VM | SIGCHLD, &info[i]);
@@ -206,14 +204,14 @@ static void test(uint32_t threads)
 	usec /= threads;
 	nsec = 1000.0 * (double)usec / iter;
 
-	printf("%" PRIu16 "\t%8.3f\t%8.3f\t  %12.7f\n", threads, nsec, 1000.0 / nsec, (float)WIDTH / nsec);
+	printf("%" PRIu16 "\t%8.3f\t%8.3f\t  %12.7f\n",
+		threads, nsec, 1000.0 / nsec, (float)WIDTH / nsec);
 }
 
 int main(void)
 {
-	uint32_t eax, ebx, ecx, edx = 0;
-	uint32_t i;
-	uint32_t cpus = sysconf(_SC_NPROCESSORS_ONLN);
+	uint32_t i, eax, ebx, ecx, edx = 0;
+	const uint32_t cpus = sysconf(_SC_NPROCESSORS_ONLN);
 
 	/* Intel CPU? */
 	cpuid(0, eax, ebx, ecx, edx);
