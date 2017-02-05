@@ -19,7 +19,8 @@
 BINDIR=/usr/bin
 
 x86rdrand-benchmark: x86rdrand-benchmark.o
-	$(CC) $< -o $@ -lpthread
+	$(CC) $< -o $@
+	strip $@
 
 CFLAGS += -O3 -Wall -Werror -Wextra -fipa-pta -ftree-vectorize -fweb -fwhole-program -fivopts
 

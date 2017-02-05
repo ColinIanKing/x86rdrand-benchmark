@@ -16,6 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  */
+#define _GNU_SOURCE
+
+#include <sched.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <inttypes.h>
@@ -23,7 +26,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
-#include <pthread.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <stdbool.h>
 
 #if !(defined(__x86_64__) || defined(__x86_64) || defined(__i386__) || defined(__i386))
@@ -39,11 +43,14 @@
 volatile bool start_test;
 volatile bool end_test;
 
+#define STACK_SIZE	(65536)
+
 typedef struct {
 	uint64_t usec;		/* duration of test in microseconds */
 	uint64_t iter;		/* number of iterations taken */
 	uint16_t thread_num;	/* thread instance number */
-	pthread_t thread;	/* pthread info */
+	pid_t	 pid;		/* clone process ID */
+	char 	 stack[STACK_SIZE];/* stack */
 } info_t;
 
 #define ITERATIONS	(320000000)
@@ -104,7 +111,7 @@ static inline uint32_t rdrand32(void)
 	RDRAND32x4	\
 	RDRAND32x4
 
-static void *test64(void *private)
+static int test64(void *private)
 {
 	struct timeval tv1, tv2;
 	uint64_t usec1;
@@ -156,7 +163,7 @@ static void *test64(void *private)
 	info->iter = i * 32;
 	info->usec = usec2 - usec1;
 
-	return NULL;
+	_exit(0);
 }
 
 static void test(uint32_t threads)
@@ -164,22 +171,32 @@ static void test(uint32_t threads)
 	uint32_t i;
 	uint64_t usec = 0;
 	uint64_t iter = 0;
-	info_t info[threads];
-	void *ret;
+	info_t *info;
 	double nsec;
+
+	info = (info_t *)calloc(threads, sizeof(info_t));
+	if (!info) {
+		fprintf(stderr, "Failed to allocate thread state and stack\n");
+		exit(1);
+	}
 
 	start_test = false;
 
 	for (i = 0; i < threads; i++) {
 		info[i].thread_num = i;
 		info[i].iter = ITERATIONS;
-		pthread_create(&info[i].thread, NULL, test64, &info[i]);
+		info[i].pid = clone(test64, &info[i].stack[STACK_SIZE - 64],
+			CLONE_VM | SIGCHLD, &info[i]);
 	}
 
 	start_test = true;
 
-	for (i = 0; i < threads; i++)
-		pthread_join(info[i].thread, &ret);
+	for (i = 0; i < threads; i++) {
+		int status, ret;
+
+		ret = waitpid(info[i].pid, &status, 0);
+		(void)ret;
+	}
 
 	for (i = 0; i < threads; i++) {
 		usec += info[i].usec;
