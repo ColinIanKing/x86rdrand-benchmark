@@ -112,6 +112,7 @@ typedef struct {
 } info_t;
 
 static volatile bool start_test, end_test;
+static uint32_t count;
 
 static int test64(void *private)
 {
@@ -122,6 +123,9 @@ static int test64(void *private)
 	const uint64_t iter = info->iter / 32;
 
 	end_test = false;
+
+	__atomic_fetch_add(&count, 1, __ATOMIC_RELAXED);
+
 	while (!start_test)
 		;
 
@@ -166,46 +170,51 @@ static int test64(void *private)
 	_exit(0);
 }
 
-static void test(const uint32_t threads)
+static void test(const uint32_t instances)
 {
-	uint32_t i;
+	uint32_t i, val;
 	uint64_t usec = 0, iter = 0;
 	info_t *info;
 	double nsec;
 
-	info = (info_t *)calloc(threads, sizeof(info_t));
+	info = (info_t *)calloc(instances, sizeof(info_t));
 	if (!info) {
 		fprintf(stderr, "Failed to allocate thread state and stack\n");
 		exit(1);
 	}
 
 	start_test = false;
+	count = 0;
 
-	for (i = 0; i < threads; i++) {
+	for (i = 0; i < instances; i++) {
 		info[i].instance = i;
 		info[i].iter = ITERATIONS;
 		info[i].pid = clone(test64, &info[i].stack[STACK_SIZE - 64],
 			CLONE_VM | SIGCHLD, &info[i]);
 	}
 
+	do {
+		__atomic_load(&count, &val,__ATOMIC_RELAXED);
+	} while (val != instances);
+
 	start_test = true;
 
-	for (i = 0; i < threads; i++) {
+	for (i = 0; i < instances; i++) {
 		int status, ret;
 
 		ret = waitpid(info[i].pid, &status, 0);
 		(void)ret;
 	}
 
-	for (i = 0; i < threads; i++) {
+	for (i = 0; i < instances; i++) {
 		usec += info[i].usec;
 		iter += info[i].iter;
 	}
-	usec /= threads;
+	usec /= instances;
 	nsec = 1000.0 * (double)usec / iter;
 
 	printf("%" PRIu16 "\t%8.3f\t%8.3f\t  %12.7f\n",
-		threads, nsec, 1000.0 / nsec, (float)WIDTH / nsec);
+		instances, nsec, 1000.0 / nsec, (float)WIDTH / nsec);
 }
 
 int main(void)
