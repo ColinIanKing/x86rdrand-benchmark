@@ -109,6 +109,7 @@ static inline uint32_t rdrand32(void)
 #define RDRAND32x16	\
 	RDRAND32x4	\
 	RDRAND32x4	\
+	RDRAND32x4	\
 	RDRAND32x4
 
 static int test64(void *private)
