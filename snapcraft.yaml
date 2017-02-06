@@ -1,5 +1,5 @@
 name: x86rdrand-benchmark
-version: 0.0.3
+version: 0.0.4
 summary: Intel x86 rdrand CPU benchmark
 description: x86rdrand-benchmark benchmarks the rdrand random number generator
 
