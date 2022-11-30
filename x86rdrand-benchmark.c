@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2010-2020 Canonical
+ * Copyright (C) 2010-2021 Canonical
+ * Copyright (C) 2021-2022 Colin Ian King
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -31,7 +32,7 @@
 #include <stdbool.h>
 
 #define STACK_SIZE	(65536)
-#define ITERATIONS	(320000000)
+#define ITERATIONS	(3200000)
 
 #if !(defined(__x86_64__) || \
       defined(__x86_64) || \
